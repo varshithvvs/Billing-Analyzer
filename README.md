@@ -6,4 +6,4 @@ Developed and Tested on Python 3.8.5
 2. Execute workflow.py from /root/src on an activated environment which will create the output file in /root/src/resources/Python Exercise Output.xlsx
 
 
-Github Repositry: https://github.com/varshithvvs/ms_interview
+Github Repositry: https://github.com/varshithvvs/Billing-Analyzer
