@@ -1,3 +1,5 @@
 modin
 pandas-profiling
 tabloo
+dask
+dask[distributed]
