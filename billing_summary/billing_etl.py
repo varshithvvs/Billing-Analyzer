@@ -4,8 +4,8 @@ import pandas as pd
 def run():
 
     # Load raw data from resources
-    raw_billing_data = pd.read_csv(r"./billing_summary/resources/billings_europe.csv",header=None)
-    #raw_billing_data = pd.read_csv(r"./resources/billings_europe.csv",header=None)
+    #raw_billing_data = pd.read_csv(r"./billing_summary/resources/billings_europe.csv",header=None)
+    raw_billing_data = pd.read_csv(r"./resources/billings_europe.csv",header=None)
     
     # Transform raw inputs to starndardize MDB (master database)
     raw_billing_data = raw_billing_data.iloc[4:,:]
@@ -38,17 +38,39 @@ def run():
     # Calculate summary statistics by segment
     summary_statistics_measure_of_spread = billing_data.groupby("Segment").agg(
         {
-            "Value": ["size","var","sem","skew"]
+            "Value": ["var","sem","skew"]
         }
     )
+    summary_statistics_measure_of_spread.columns = summary_statistics_measure_of_spread.columns.droplevel(0) 
     summary_statistics_kurtosis = billing_data.groupby("Segment").apply(pd.DataFrame.kurt)
     summary_statistics_measure_of_location = billing_data.groupby("Segment").describe()
+    summary_statistics_measure_of_location.columns = summary_statistics_measure_of_location.columns.droplevel(0)
     summary_statistics = pd.merge(summary_statistics_measure_of_spread,summary_statistics_measure_of_location,how='left',on='Segment')
     summary_statistics = pd.merge(summary_statistics,summary_statistics_kurtosis,how='left',on='Segment')
+    summary_statistics = summary_statistics.rename(columns={'Value':'kurt'})
+    summary_statistics = summary_statistics.reindex(columns=["count","mean","min","25%","50%","75%","max","sem","var","std","skew","kurt"])
 
-    print(summary_statistics)
-    summary_statistics.info()
+    #Generate .xlsx file
+    writer = pd.ExcelWriter(r'./resources/Python Exerscise Output.xlsx', engine='xlsxwriter')
+    currency_format = writer.book.add_format({'num_format':'[$€-nl-NL] #,##0.00'})
+    sum_of_billings_country.to_excel(writer, sheet_name='Output', startrow=3,startcol=0,index=False)
+    sum_of_billings_period.to_excel(writer, sheet_name='Output', startrow=3,startcol=4,index=False)
+    summary_statistics.to_excel(writer, sheet_name='Segment Summary Stats', startrow=0,startcol=0,index=True)
+    writer.sheets['Output'].conditional_format('B5:B20',{
+        'type':'cell',
+        'criteria':'greater than',
+        'value':-99999999999999999,
+        'format':currency_format
+        })
+    writer.sheets['Output'].conditional_format('F5:F9',{
+        'type':'cell',
+        'criteria':'greater than',
+        'value':-99999999999999999,
+        'format':currency_format
+        })
+    writer.sheets['Output'].set_column(1,1,15)
+    writer.sheets['Output'].set_column(4,5,15)
+    writer.sheets['Segment Summary Stats'].set_column(0,0,45)
+    writer.save()
 
-    return None
-
-run()
+    return billing_data,sum_of_billings_country,sum_of_billings_period,summary_statistics
